@@ -6,9 +6,11 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage, db } from "./firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { Box, Button, Center } from "@chakra-ui/react";
-import NoteBook from "./NoteBook";
+import { useNavigate } from "react-router-dom";
 
 function Upload() {
+  const navigate = useNavigate();
+
   const [file, setFile] = useState(null);
 
   const onFileChange = (files) => {
@@ -59,7 +61,11 @@ function Upload() {
   return (
     <>
       <Center mt={10}>
-        <Button variant="link" _hover={{ textDecoration: "underline" }}>
+        <Button
+          variant="link"
+          _hover={{ textDecoration: "underline" }}
+          onClick={() => navigate("/")}
+        >
           Go to scrapbook 📙
         </Button>
       </Center>
