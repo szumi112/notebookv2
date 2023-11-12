@@ -1,0 +1,157 @@
+/* Overall styling for the container */
+
+body {
+  background-color: #f7f7f7 !important;
+}
+
+.box {
+  background-color: rgb(
+    255,
+    255,
+    255
+  ); /* Adjust the color to match the design */
+  padding: 2rem; /* Provides padding inside the box */
+  border-radius: 10px; /* Rounded corners for the box */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Box shadow for a subtle depth effect */
+  max-width: 480px; /* Adjust to the desired width */
+  margin: auto; /* Center the box */
+}
+
+/* Header styling */
+.header {
+  font-size: 1.5rem; /* Larger text for the header */
+  color: #333333; /* Adjust the color to match the design */
+  text-align: center;
+  margin-bottom: 2rem; /* Space below the header */
+}
+
+/* Styling for the drop file input area */
+.drop-file-input {
+  border: 2px dashed #bbbbbb; /* Dashed border style */
+  border-radius: 10px; /* Rounded corners for the input area */
+  padding: 2rem; /* Space inside the input area */
+  text-align: center; /* Center the text and icon */
+}
+
+.drop-file-input:hover {
+  border-color: #777777; /* Darker border on hover for visual feedback */
+}
+
+/* Icon styling inside the drop area, adjust as needed */
+.drop-file-input-icon {
+  font-size: 4rem; /* Large icon size */
+  color: #777777; /* Icon color */
+  margin-bottom: 1rem; /* Space below the icon */
+}
+
+/* Styling for the upload button */
+.upload-button {
+  background-color: #0066ff; /* Adjust the button color to match the design */
+  color: #ffffff; /* Text color for the button */
+  border: none; /* No border for the button */
+  padding: 1rem 2rem; /* Top/bottom and left/right padding */
+  border-radius: 5px; /* Rounded corners for the button */
+  font-size: 1rem; /* Button text size */
+  cursor: pointer; /* Pointer cursor on hover */
+  display: block; /* Make the button a block to fit the width */
+  width: 100%; /* Full width of the parent */
+  margin-top: 1rem; /* Space above the button */
+}
+
+.upload-button:hover {
+  background-color: #0056e0; /* Slightly darker button color on hover */
+}
+
+/* Responsive styling for smaller screens */
+@media (max-width: 768px) {
+  .box {
+    width: 90%; /* Make the box width responsive */
+    padding: 1rem; /* Smaller padding on smaller screens */
+  }
+
+  .drop-file-input {
+    padding: 1rem; /* Smaller padding in the input area on smaller screens */
+  }
+
+  .upload-button {
+    padding: 0.75rem 1.5rem; /* Smaller button padding on smaller screens */
+  }
+}
+
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,700;1,400;1,500;1,700&family=Gaegu:wght@300;400;700&family=Waiting+for+the+Sunrise&display=swap");
+body {
+  font-family: "Waiting for the Sunrise";
+}
+/* styles.css or your CSS file */
+.page {
+  background-color: #f5deb3; /* Worn paper yellow */
+
+  font-family: "Gaegu", sans-serif;
+
+  color: #000;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid #c6c6c6;
+  font-size: 300%;
+  position: relative; /* Needed for the absolute positioning of the pseudo-elements */
+  overflow: hidden; /* Ensures the pseudo-elements don't go outside the page */
+}
+
+.page-content {
+  padding: 40px;
+  /* Gives a typewritten or handwritten effect */
+  line-height: 1.5;
+}
+
+/* Adding a burned or worn out effect on the edges */
+.page::before,
+.page::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none; /* Allows clicking through to the content */
+}
+
+.page::before {
+  /* Adding a texture overlay for a more realistic paper effect */
+  /* background-image: url("path_to_your_texture_image"); */
+  opacity: 0.5; /* Adjust as needed */
+}
+
+.page::after {
+  /* Adding a random noise overlay to simulate paper wear */
+  /* background-image: url("path_to_your_noise_image"); */
+  opacity: 0.3; /* Adjust as needed */
+}
+
+/* Simulating rough and darkened edges */
+.page:after {
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.8), inset 0 0 5px rgba(0, 0, 0, 0.5),
+    inset 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.react-pageflip .page {
+  transition: transform 0.4s ease-in-out;
+  /* Adjust the speed and easing of the flip */
+}
+
+.react-pageflip .page-shadow {
+  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+  /* Adjust the shadow to be more or less pronounced */
+}
+
+/* Example to modify flip animation */
+.page-flip-animation {
+  animation: customFlip 1s forwards;
+}
+
+@keyframes customFlip {
+  0% {
+    transform: rotateY(0deg);
+  }
+  100% {
+    transform: rotateY(180deg);
+  }
+}

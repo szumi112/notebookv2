@@ -1,0 +1,8 @@
+/* Add this CSS to your styles.css file or equivalent */
+
+.wooden-background {
+  background-image: url("https://5.imimg.com/data5/SELLER/Default/2022/8/WC/YJ/WD/37882387/wood-texture-wallpaper.jpg"); /* Replace with your image path */
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
