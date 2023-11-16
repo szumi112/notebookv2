@@ -5,11 +5,13 @@ import { useState } from "react";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage, db } from "./firebase";
 import { doc, setDoc } from "firebase/firestore";
-import { Box, Button, Center } from "@chakra-ui/react";
+import { Box, Button, Center, Input, Text } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
+import EditPages from "./components/edit-pages";
 
 function Upload() {
   const navigate = useNavigate();
+  const [pageNumber, setPageNumber] = useState();
 
   const [file, setFile] = useState(null);
 
@@ -22,7 +24,6 @@ function Upload() {
   const uploadToDatabase = (url) => {
     let docData = {
       mostRecentUploadURL: url,
-      username: "jasondubon",
     };
     const userRef = doc(db, "users", docData.username);
     setDoc(userRef, docData, { merge: true })
@@ -36,7 +37,8 @@ function Upload() {
 
   const handleClick = () => {
     if (file === null) return;
-    const fileRef = ref(storage, `videos/${file.name}`);
+    const fileName = `page${pageNumber}_${file.name}`;
+    const fileRef = ref(storage, `videos/${fileName}`);
     const uploadTask = uploadBytesResumable(fileRef, file);
 
     uploadTask.on(
@@ -59,10 +61,11 @@ function Upload() {
   };
 
   return (
-    <>
-      <Center mt={10}>
+    <Box bg="#141a2c" m="0" p="0" minH="100vh" minW="100vw">
+      <Center pt={10}>
         <Button
-          variant="link"
+          variant="outline"
+          color="white"
           _hover={{ textDecoration: "underline" }}
           onClick={() => navigate("/")}
         >
@@ -78,7 +81,24 @@ function Upload() {
         <br></br>
         <UploadButton onClick={() => handleClick()}> </UploadButton>
       </Box>
-    </>
+      <Box mt={12}>
+        <Text textAlign={"center"} color="white" mb={4}>
+          Add on page:
+        </Text>
+        <Center>
+          <Input
+            type="number"
+            value={pageNumber}
+            px={4}
+            py={2}
+            borderRadius={"4px"}
+            onChange={(e) => setPageNumber(e.target.value)}
+            placeholder="Page number"
+          />
+        </Center>
+      </Box>
+      <EditPages />
+    </Box>
   );
 }
 

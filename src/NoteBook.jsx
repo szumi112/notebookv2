@@ -1,6 +1,8 @@
-import { Box, Text } from "@chakra-ui/react";
 import React, { useState, useEffect, useRef } from "react";
+import { Box, Text } from "@chakra-ui/react";
 import HTMLFlipBook from "react-pageflip";
+import { db } from "./firebase";
+import { collection, getDocs } from "firebase/firestore";
 
 const Page = React.forwardRef((props, ref) => {
   return (
@@ -13,6 +15,7 @@ const Page = React.forwardRef((props, ref) => {
 });
 
 const NoteBook = () => {
+  const [pages, setPages] = useState([]);
   const [size, setSize] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -22,6 +25,22 @@ const NoteBook = () => {
   const flipBook = useRef();
 
   useEffect(() => {
+    const pagesCollectionRef = collection(db, "pages");
+    const getPagesList = async () => {
+      try {
+        const data = await getDocs(pagesCollectionRef);
+        const fetchedPages = data.docs.map((doc) => ({
+          ...doc.data(),
+          id: doc.id,
+        }));
+        setPages(fetchedPages);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    getPagesList();
+
     const handleResize = () => {
       const newWidth = window.innerWidth;
       const newHeight = window.innerHeight;
@@ -40,6 +59,8 @@ const NoteBook = () => {
     setCurrentPage(e.data);
   };
 
+  console.log(pages);
+
   return (
     <Box overflow="hidden" data-density="hard" bgColor={"white"}>
       <HTMLFlipBook
@@ -54,29 +75,15 @@ const NoteBook = () => {
         ref={flipBook}
         drawShadow={!singlePage}
       >
-        <Page number="1" className="wooden-background">
-          <Text
-            color="white"
-            fontWeight={"bold"}
-            fontSize="150px"
-            textShadow={"3px 3px 3px rgba(0,0,0,0.3)"}
+        {pages.map((page, index) => (
+          <Page
+            key={page.id}
+            className={index === 0 ? "wooden-background" : ""}
           >
-            Jason and Wife
-          </Text>
-        </Page>
-        <Page number="2">How we met..</Page>
-        <Page number="3">First date..</Page>
-        <Page number="4">Our secret..</Page>
-        <Page number="3">The day when we..</Page>
-        <Page number="4">Page 6</Page>
-        <Page number="3">Page 7</Page>
-        <Page number="4">Page 8</Page>
-        <Page number="3">Page 9</Page>
-        <Page number="4">Page 10</Page>
-        <Page number="3">Page 11</Page>
-        <Page number="4">Page 12</Page>
+            <Text>{page.title}</Text>
+          </Page>
+        ))}
       </HTMLFlipBook>
-      {/* <div>Current Page: {currentPage + 1}</div> */}
     </Box>
   );
 };

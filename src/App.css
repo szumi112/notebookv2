@@ -1,7 +1,12 @@
 /* Overall styling for the container */
-
+html {
+  margin: 0 !important;
+  padding: 0 !important;
+}
 body {
-  background-color: #f7f7f7 !important;
+  background-color: #f7f7f7;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .box {
