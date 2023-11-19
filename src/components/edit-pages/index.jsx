@@ -15,7 +15,9 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  onSnapshot,
   setDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
@@ -27,26 +29,30 @@ const EditPages = () => {
   const [newPageTitle, setNewPageTitle] = useState("");
   const pagesCollectionRef = collection(db, "pages");
   const [error, setError] = useState();
+  const [updatedTitle, setUpdatedTitle] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentEditingPage, setCurrentEditingPage] = useState(null);
 
   const handleTitleChange = (event) => {
     setNewPageTitle(event.target.value);
   };
 
   useEffect(() => {
-    const getPagesList = async () => {
-      try {
-        const data = await getDocs(pagesCollectionRef);
-        const filteredPages = data.docs.map((doc) => ({
+    const unsubscribe = onSnapshot(
+      pagesCollectionRef,
+      (snapshot) => {
+        const pagesData = snapshot.docs.map((doc) => ({
           ...doc.data(),
           id: doc.id,
         }));
-        setPages(filteredPages);
-      } catch (err) {
+        setPages(pagesData);
+      },
+      (err) => {
         console.log(err);
       }
-    };
+    );
 
-    getPagesList();
+    return () => unsubscribe();
   }, []);
 
   const uploadToDatabase = () => {
@@ -79,6 +85,26 @@ const EditPages = () => {
       setPages(pages.filter((page) => page.id !== pageId));
     } catch (error) {
       console.error("Error removing document: ", error);
+    }
+  };
+
+  const startEditing = (page) => {
+    setIsEditing(true);
+    setCurrentEditingPage(page);
+    setUpdatedTitle(page.title);
+  };
+
+  const handleUpdateTitleChange = (e) => {
+    setUpdatedTitle(e.target.value);
+  };
+
+  const saveUpdatedTitle = async (pageId) => {
+    try {
+      await updateDoc(doc(db, "pages", pageId), { title: updatedTitle });
+      setIsEditing(false);
+      setCurrentEditingPage(null);
+    } catch (error) {
+      console.error("Error updating document: ", error);
     }
   };
 
@@ -139,34 +165,51 @@ const EditPages = () => {
           <></>
         )}
       </Box>
-      <Box
-        bg="#141a2c"
-        color="white"
-        mx="auto"
-        pt={6}
-        // borderTop={"1px solid"}
-        // borderTopColor="rgba(0,0,0,0.5)"
-        justifyContent={"center"}
-      >
-        {pages.map((page) => (
-          <>
-            <Flex flexDir={"column"} mx="auto">
-              <Center alignContent={"center"}>
-                <Text>
+      <Box bg="#141a2c" color="white" mx="auto" pt={6} pb={10}>
+        <Flex maxW="400px" mx="auto" flexDir={"column"}>
+          {pages.map((page) => (
+            <Flex
+              flexDir={"column"}
+              mx="auto"
+              justifyContent={"space-between"}
+              my={4}
+            >
+              {isEditing && currentEditingPage.id === page.id ? (
+                <Flex>
+                  <Input
+                    placeholder="Enter new title"
+                    value={updatedTitle}
+                    onChange={handleUpdateTitleChange}
+                    color="black"
+                  />
+                  <Button onClick={() => saveUpdatedTitle(page.id)}>
+                    Save
+                  </Button>
+                </Flex>
+              ) : (
+                <Text mr={4}>
                   {page.title} ({page.page})
                 </Text>
-                <Image src={edit} w="24px" ml={4} />
+              )}
+              <Flex mx="auto" mt={2}>
+                <Image
+                  src={edit}
+                  w="20px"
+                  mx={4}
+                  cursor="pointer"
+                  onClick={() => startEditing(page)}
+                />
                 <Image
                   src={deleteIcon}
-                  w="24px"
-                  ml={4}
+                  w="20px"
+                  mx={4}
                   cursor="pointer"
                   onClick={() => deletePage(page.id)}
                 />
-              </Center>
+              </Flex>
             </Flex>
-          </>
-        ))}
+          ))}
+        </Flex>
       </Box>
     </Box>
   );

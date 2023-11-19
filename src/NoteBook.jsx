@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Box, Text } from "@chakra-ui/react";
+import { Box, Image, Text } from "@chakra-ui/react";
 import HTMLFlipBook from "react-pageflip";
 import { db } from "./firebase";
 import { collection, getDocs } from "firebase/firestore";
@@ -16,6 +16,8 @@ const Page = React.forwardRef((props, ref) => {
 
 const NoteBook = () => {
   const [pages, setPages] = useState([]);
+  const [uploadedItems, setUploadedItems] = useState({});
+
   const [size, setSize] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -39,7 +41,23 @@ const NoteBook = () => {
       }
     };
 
+    const getUploadedItems = async () => {
+      const itemsCollectionRef = collection(db, "users");
+      const data = await getDocs(itemsCollectionRef);
+      const items = data.docs.reduce((acc, doc) => {
+        const pageNum = doc.id.split("_")[0];
+        if (!acc[pageNum]) {
+          acc[pageNum] = [];
+        }
+        acc[pageNum].push(doc.data());
+        return acc;
+      }, {});
+
+      setUploadedItems(items);
+    };
+
     getPagesList();
+    getUploadedItems();
 
     const handleResize = () => {
       const newWidth = window.innerWidth;
@@ -51,6 +69,8 @@ const NoteBook = () => {
       setSinglePage(newWidth < 1400);
     };
 
+    console.log("Uploaded Items:", uploadedItems);
+
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -59,7 +79,62 @@ const NoteBook = () => {
     setCurrentPage(e.data);
   };
 
-  console.log(pages);
+  const renderMedia = (item) => {
+    const videoFileTypes = [
+      "mp4",
+      "mov",
+      "avi",
+      "mkv",
+      "wmv",
+      "avchd",
+      "webm",
+      "h264",
+      "mpeg4",
+      "flv",
+      "m4v",
+      "3gp",
+      "ts",
+      "m2ts",
+      "mts",
+      "divx",
+      "ogv",
+      "dv",
+      "dat",
+      "asf",
+      "webm",
+      "mpg",
+      "mpeg",
+      "mxf",
+      "vob",
+      "rm",
+      "rmvb",
+      "drc",
+      "gifv",
+      "mng",
+      "qt",
+      "yuv",
+      "nsv",
+      "f4v",
+      "f4p",
+      "f4a",
+      "f4b",
+    ];
+    const isVideo = videoFileTypes.some((ext) =>
+      item.mostRecentUploadURL.toLowerCase().endsWith(`.${ext}`)
+    );
+
+    return isVideo ? (
+      <video controls width="100%">
+        <source src={item.mostRecentUploadURL} />
+      </video>
+    ) : (
+      <Image
+        src={item.mostRecentUploadURL}
+        alt="Uploaded content"
+        width="100%"
+      />
+    );
+  };
 
   return (
     <Box overflow="hidden" data-density="hard" bgColor={"white"}>
@@ -81,6 +156,14 @@ const NoteBook = () => {
             className={index === 0 ? "wooden-background" : ""}
           >
             <Text>{page.title}</Text>
+
+            {uploadedItems[page.id] &&
+              uploadedItems[page.id].length > 0 &&
+              uploadedItems[page.id].map((item, idx) => (
+                <Box key={idx} w="100%" h="100%">
+                  {renderMedia(item)}
+                </Box>
+              ))}
           </Page>
         ))}
       </HTMLFlipBook>

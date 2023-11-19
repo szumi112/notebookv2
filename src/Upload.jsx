@@ -12,8 +12,8 @@ import EditPages from "./components/edit-pages";
 function Upload() {
   const navigate = useNavigate();
   const [pageNumber, setPageNumber] = useState();
-
   const [file, setFile] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const onFileChange = (files) => {
     const currentFile = files[0];
@@ -25,7 +25,13 @@ function Upload() {
     let docData = {
       mostRecentUploadURL: url,
     };
-    const userRef = doc(db, "users", docData.username);
+    const userRef = doc(
+      db,
+      "users",
+      `${pageNumber}_${
+        Date.now().toString(36) + Math.random().toString(36).substr(2)
+      }`
+    );
     setDoc(userRef, docData, { merge: true })
       .then(() => {
         console.log("successfully updated DB");
@@ -36,6 +42,10 @@ function Upload() {
   };
 
   const handleClick = () => {
+    if (!pageNumber) {
+      setErrorMessage("Please choose which page to add this onto");
+      return;
+    }
     if (file === null) return;
     const fileName = `page${pageNumber}_${file.name}`;
     const fileRef = ref(storage, `videos/${fileName}`);
@@ -58,10 +68,11 @@ function Upload() {
         });
       }
     );
+    setErrorMessage("");
   };
 
   return (
-    <Box bg="#141a2c" m="0" p="0" minH="100vh" minW="100vw">
+    <Box bg="#141a2c" m="0" p="0" minH="100vh" minW="100vw" overflowX="hidden">
       <Center pt={10}>
         <Button
           variant="outline"
@@ -97,6 +108,11 @@ function Upload() {
           />
         </Center>
       </Box>
+      {errorMessage && (
+        <Text textAlign={"center"} color="red" mb={4} mt={2}>
+          {errorMessage}
+        </Text>
+      )}
       <EditPages />
     </Box>
   );
