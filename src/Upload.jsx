@@ -58,16 +58,14 @@ function Upload() {
   };
 
   const uploadToDatabase = (url) => {
+    const itemId = `${pageNumber}_${
+      Date.now().toString(36) + Math.random().toString(36).substr(2)
+    }`;
     let docData = {
+      id: itemId,
       mostRecentUploadURL: url,
     };
-    const userRef = doc(
-      db,
-      "users",
-      `${pageNumber}_${
-        Date.now().toString(36) + Math.random().toString(36).substr(2)
-      }`
-    );
+    const userRef = doc(db, "users", itemId);
     setDoc(userRef, docData, { merge: true })
       .then(() => {
         console.log("successfully updated DB");

@@ -4,6 +4,11 @@ html {
   overflow-x: hidden;
 }
 
+.react-resizable-handle-se {
+  bottom: -25px !important;
+  right: -25px !important;
+}
+
 body {
   background-color: #f7f7f7;
   margin: 0 !important;

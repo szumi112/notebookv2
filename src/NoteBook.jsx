@@ -2,8 +2,16 @@ import React, { useState, useEffect, useRef } from "react";
 import { Box, Button, Flex, Image, Text } from "@chakra-ui/react";
 import HTMLFlipBook from "react-pageflip";
 import { db } from "./firebase";
-import { collection, doc, getDocs, onSnapshot } from "firebase/firestore";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import {
+  collection,
+  doc,
+  getDocs,
+  onSnapshot,
+  setDoc,
+} from "firebase/firestore";
+import Draggable from "react-draggable";
+import { ResizableBox } from "react-resizable";
+import "react-resizable/css/styles.css";
 
 const NavigationButtons = ({ flipBook }) => {
   const goToPrevPage = () => {
@@ -22,22 +30,18 @@ const NavigationButtons = ({ flipBook }) => {
   );
 };
 
-const Page = React.forwardRef((props, ref) => {
-  return (
-    <div className={`page ${props.className}`} ref={ref} data-density="hard">
-      <div className="page-content">
-        <h1>{props.children}</h1>
-      </div>
+const Page = React.forwardRef((props, ref) => (
+  <div className={`page ${props.className}`} ref={ref} data-density="hard">
+    <div className="page-content">
+      <h1>{props.children}</h1>
     </div>
-  );
-});
+  </div>
+));
 
 const NoteBook = () => {
   const [pages, setPages] = useState([]);
   const [uploadedItems, setUploadedItems] = useState({});
   const [editMode, setEditMode] = useState(false);
-  console.log(editMode);
-
   const [size, setSize] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -45,17 +49,29 @@ const NoteBook = () => {
   const [singlePage, setSinglePage] = useState(window.innerWidth < 1400);
   const [currentPage, setCurrentPage] = useState(0);
   const flipBook = useRef();
+  const [resizeMode, setResizeMode] = useState(true);
+  const [dragAndDropMode, setDragAndDropMode] = useState(false);
+
+  const toggleResizeMode = () => {
+    setResizeMode(!resizeMode);
+    if (!resizeMode) {
+      setDragAndDropMode(false);
+    }
+  };
+
+  const toggleDragAndDropMode = () => {
+    setDragAndDropMode(!dragAndDropMode);
+    if (!dragAndDropMode) {
+      setResizeMode(false);
+    }
+  };
 
   useEffect(() => {
     const pagesCollectionRef = collection(db, "pages");
     const getPagesList = async () => {
       try {
         const data = await getDocs(pagesCollectionRef);
-        const fetchedPages = data.docs.map((doc) => ({
-          ...doc.data(),
-          id: doc.id,
-        }));
-        setPages(fetchedPages);
+        setPages(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
       } catch (err) {
         console.log(err);
       }
@@ -66,11 +82,12 @@ const NoteBook = () => {
       try {
         const data = await getDocs(itemsCollectionRef);
         const items = data.docs.reduce((acc, doc) => {
+          const itemData = doc.data();
           const pageNum = doc.id.split("_")[0];
           if (!acc[pageNum]) {
             acc[pageNum] = [];
           }
-          acc[pageNum].push(doc.data());
+          acc[pageNum].push(itemData);
           return acc;
         }, {});
 
@@ -84,11 +101,21 @@ const NoteBook = () => {
     getUploadedItems();
   }, []);
 
-  const onPageFlip = (e) => {
-    setCurrentPage(e.data);
+  const onPageFlip = (e) => setCurrentPage(e.data);
+
+  const handleResizeStop = async (item, resizeData, pageNumber) => {
+    const newWidth = resizeData.size.width;
+    const newHeight = resizeData.size.height;
+
+    const itemRef = doc(db, "users", `${pageNumber}_${item.id}`);
+    await setDoc(
+      itemRef,
+      { width: newWidth, height: newHeight },
+      { merge: true }
+    );
   };
 
-  const renderMedia = (item) => {
+  const renderMedia = (item, pageNumber) => {
     const videoFileTypes = [
       "mp4",
       "mov",
@@ -132,51 +159,32 @@ const NoteBook = () => {
       item.mostRecentUploadURL.toLowerCase().includes(`.${ext}`)
     );
 
-    return isVideo ? (
-      <video controls>
-        <source src={item.mostRecentUploadURL} />
-      </video>
-    ) : (
-      <Image
-        src={item.mostRecentUploadURL}
-        alt="Uploaded content"
-        width="50%"
-      />
-    );
-  };
+    const itemWidth = item.width || 200;
+    const itemHeight = item.height || 200;
 
-  const onDragEnd = (result) => {
-    if (!result.destination) {
-      return;
-    }
-
-    const sourcePageNumber = result.source.droppableId;
-    const destinationPageNumber = result.destination.droppableId;
-    const sourceIndex = result.source.index;
-    const destinationIndex = result.destination.index;
-
-    const updatedItems = { ...uploadedItems };
-    const [movedItem] = updatedItems[sourcePageNumber].splice(sourceIndex, 1);
-    updatedItems[destinationPageNumber].splice(destinationIndex, 0, movedItem);
-
-    setUploadedItems(updatedItems);
-  };
-
-  useEffect(() => {
-    window.addEventListener("click", handleMiddleScreenClick);
-    return () => {
-      window.removeEventListener("click", handleMiddleScreenClick);
+    const resizableProps = {
+      width: item.width || 200,
+      height: item.height || 200,
+      onResizeStop: (event, resizeData) =>
+        handleResizeStop(item, resizeData, pageNumber),
+      disabled: !resizeMode,
     };
-  }, []);
 
-  const handleMiddleScreenClick = (event) => {
-    const middleStart = window.innerWidth / 4;
-    const middleEnd = middleStart * 3;
-
-    if (event.clientX > middleStart && event.clientX < middleEnd) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
+    return (
+      <ResizableBox {...resizableProps}>
+        {isVideo ? (
+          <video controls>
+            <source src={item.mostRecentUploadURL} />
+          </video>
+        ) : (
+          <Image
+            src={item.mostRecentUploadURL}
+            alt="Uploaded content"
+            style={{ width: "100%", height: "100%" }}
+          />
+        )}
+      </ResizableBox>
+    );
   };
 
   useEffect(() => {
@@ -192,64 +200,76 @@ const NoteBook = () => {
     return () => unsubscribe();
   }, []);
 
+  const handleDragStop = async (item, e, data, pageNumber) => {
+    const newX = data.x;
+    const newY = data.y;
+
+    const itemRef = doc(db, "users", `${pageNumber}_${item.id}`);
+    await setDoc(itemRef, { x: newX, y: newY }, { merge: true });
+  };
+
   return (
     <Box overflow="hidden" data-density="hard" bgColor={"white"}>
-      <DragDropContext onDragEnd={onDragEnd}>
-        <HTMLFlipBook
-          width={singlePage ? size.width : size.width / 2}
-          height={size.height * 2.5}
-          {...(!singlePage && { size: "stretch" })}
-          maxShadowOpacity={0.5}
-          showCover={true}
-          mobileScrollSupport={true}
-          flippingMode="hard"
-          onFlip={onPageFlip}
-          ref={flipBook}
-          drawShadow={!singlePage}
-          useMouseEvents={!editMode}
-        >
-          {pages.map((page, index) => {
-            const pageNumber = page.id.replace("page ", "");
-            const items = uploadedItems[pageNumber] ?? [];
+      <HTMLFlipBook
+        width={singlePage ? size.width : size.width / 2}
+        height={size.height * 2.5}
+        {...(!singlePage && { size: "stretch" })}
+        maxShadowOpacity={0.5}
+        showCover={true}
+        mobileScrollSupport={true}
+        flippingMode="hard"
+        onFlip={onPageFlip}
+        ref={flipBook}
+        drawShadow={!singlePage}
+        useMouseEvents={!editMode}
+      >
+        {pages.map((page, index) => {
+          const pageNumber = page.id.replace("page ", "");
+          const items = uploadedItems[pageNumber] ?? [];
 
-            return (
-              <Page
-                key={page.id}
-                className={index === 0 ? "wooden-background" : ""}
-              >
-                <Text>{page.title}</Text>
-                <Droppable droppableId={pageNumber} direction="horizontal">
-                  {(provided) => (
-                    <div ref={provided.innerRef} {...provided.droppableProps}>
-                      {items.map((item, idx) => (
-                        <Draggable
-                          key={`${pageNumber}-${idx}`}
-                          draggableId={`${pageNumber}-${idx}`}
-                          index={idx}
-                        >
-                          {(provided) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                            >
-                              <Box key={idx} w="100%" h="100%">
-                                {renderMedia(item)}
-                              </Box>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </Page>
-            );
-          })}
-        </HTMLFlipBook>
-      </DragDropContext>
-      {editMode && <NavigationButtons flipBook={flipBook} />}
+          return (
+            <Page
+              key={page.id}
+              className={index === 0 ? "wooden-background" : ""}
+            >
+              <Text>{page.title}</Text>
+              <div>
+                {items.map((item, idx) => {
+                  const element = renderMedia(item, pageNumber);
+
+                  return (
+                    <Draggable
+                      key={idx}
+                      onStop={(e, data) =>
+                        handleDragStop(item, e, data, pageNumber)
+                      }
+                      defaultPosition={{ x: item.x || 0, y: item.y || 0 }}
+                      disabled={!dragAndDropMode}
+                    >
+                      <Box w="100%" h="100%">
+                        {element}
+                      </Box>
+                    </Draggable>
+                  );
+                })}
+              </div>
+            </Page>
+          );
+        })}
+      </HTMLFlipBook>
+      {editMode && (
+        <>
+          <Flex justifyContent="space-between" p={4}>
+            <Button onClick={toggleDragAndDropMode}>
+              {dragAndDropMode ? "Disable" : "Enable"} Drag & Drop
+            </Button>
+            <Button onClick={toggleResizeMode}>
+              {resizeMode ? "Disable" : "Enable"} Resize
+            </Button>
+          </Flex>
+          <NavigationButtons flipBook={flipBook} />
+        </>
+      )}
     </Box>
   );
 };
