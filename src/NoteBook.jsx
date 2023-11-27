@@ -51,6 +51,21 @@ const NoteBook = () => {
   const flipBook = useRef();
   const [resizeMode, setResizeMode] = useState(true);
   const [dragAndDropMode, setDragAndDropMode] = useState(false);
+  const [fontSizeState, setFontSizeState] = useState({});
+
+  const increaseFontSize = (itemId) => {
+    setFontSizeState((prev) => ({
+      ...prev,
+      [itemId]: (prev[itemId] || 14) + 1,
+    }));
+  };
+
+  const decreaseFontSize = (itemId) => {
+    setFontSizeState((prev) => ({
+      ...prev,
+      [itemId]: Math.max((prev[itemId] || 14) - 1, 10),
+    }));
+  };
 
   const toggleResizeMode = () => {
     setResizeMode(!resizeMode);
@@ -81,6 +96,8 @@ const NoteBook = () => {
       const itemsCollectionRef = collection(db, "users");
       try {
         const data = await getDocs(itemsCollectionRef);
+        const newFontSizeState = {};
+
         const items = data.docs.reduce((acc, doc) => {
           const itemData = doc.data();
           const pageNum = doc.id.split("_")[0];
@@ -88,10 +105,16 @@ const NoteBook = () => {
             acc[pageNum] = [];
           }
           acc[pageNum].push(itemData);
+
+          if (itemData.type === "text" && itemData.fontSize) {
+            newFontSizeState[doc.id] = itemData.fontSize;
+          }
+
           return acc;
         }, {});
 
         setUploadedItems(items);
+        setFontSizeState(newFontSizeState);
       } catch (error) {
         console.error("Error fetching uploaded items:", error);
       }
@@ -107,10 +130,19 @@ const NoteBook = () => {
     const newWidth = resizeData.size.width;
     const newHeight = resizeData.size.height;
 
-    const itemRef = doc(db, "users", `${pageNumber}_${item.id}`);
+    let newFontSize = Math.max(10, newWidth / 20);
+
+    const updatedItem = {
+      ...item,
+      width: newWidth,
+      height: newHeight,
+      fontSize: newFontSize,
+    };
+
+    const itemRef = doc(db, "users", `${item.id}`);
     await setDoc(
       itemRef,
-      { width: newWidth, height: newHeight },
+      { width: newWidth, height: newHeight, fontSize: newFontSize },
       { merge: true }
     );
   };
@@ -159,31 +191,56 @@ const NoteBook = () => {
       item.mostRecentUploadURL.toLowerCase().includes(`.${ext}`)
     );
 
-    const itemWidth = item.width || 200;
-    const itemHeight = item.height || 200;
+    let defaultWidth = 200;
+    let defaultHeight = 200;
+
+    const resizableClassName = editMode
+      ? "resizable-active"
+      : "resizable-inactive";
 
     const resizableProps = {
-      width: item.width || 200,
-      height: item.height || 200,
+      width: item.width || defaultWidth,
+      height: item.height || defaultHeight,
       onResizeStop: (event, resizeData) =>
         handleResizeStop(item, resizeData, pageNumber),
-      disabled: !resizeMode,
+      disabled: !resizeMode || !editMode,
+      className: resizableClassName,
     };
 
+    const fontSize = fontSizeState[item.id] || 14;
+
     return (
-      <ResizableBox {...resizableProps}>
-        {isVideo ? (
-          <video controls>
-            <source src={item.mostRecentUploadURL} />
-          </video>
-        ) : (
-          <Image
-            src={item.mostRecentUploadURL}
-            alt="Uploaded content"
-            style={{ width: "100%", height: "100%" }}
-          />
+      <Box zIndex={1}>
+        <ResizableBox {...resizableProps}>
+          {item.type === "text" ? (
+            <Text
+              style={{
+                width: "100%",
+                height: "100%",
+                fontSize: `${fontSize}px`,
+              }}
+            >
+              {item.text}
+            </Text>
+          ) : isVideo ? (
+            <video controls style={{ width: "100%", height: "100%" }}>
+              <source src={item.mostRecentUploadURL} />
+            </video>
+          ) : (
+            <Image
+              src={item.mostRecentUploadURL}
+              alt="Uploaded content"
+              style={{ width: "100%", height: "100%" }}
+            />
+          )}
+        </ResizableBox>
+        {item.type === "text" && editMode && (
+          <Flex justifyContent="center">
+            <Button onClick={() => decreaseFontSize(item.id)}>-</Button>
+            <Button onClick={() => increaseFontSize(item.id)}>+</Button>
+          </Flex>
         )}
-      </ResizableBox>
+      </Box>
     );
   };
 
@@ -200,11 +257,19 @@ const NoteBook = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleDragStop = async (item, e, data, pageNumber) => {
+  const handleDragStop = async (item, e, data) => {
     const newX = data.x;
     const newY = data.y;
 
-    const itemRef = doc(db, "users", `${pageNumber}_${item.id}`);
+    const itemIdParts = item.id.split("_");
+    if (itemIdParts.length < 2) {
+      console.error("Invalid item id format:", item.id);
+      return;
+    }
+    const pageNumber = itemIdParts[0];
+    const actualItemId = itemIdParts.slice(1).join("_");
+
+    const itemRef = doc(db, "users", `${pageNumber}_${actualItemId}`);
     await setDoc(itemRef, { x: newX, y: newY }, { merge: true });
   };
 

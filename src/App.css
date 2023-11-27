@@ -7,6 +7,13 @@ html {
 .react-resizable-handle-se {
   bottom: -25px !important;
   right: -25px !important;
+  background-color: red !important;
+  z-index: 99999 !important;
+}
+
+.resizable-inactive .react-resizable-handle-se {
+  display: none !important;
+  background-color: transparent !important;
 }
 
 body {

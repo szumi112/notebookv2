@@ -109,18 +109,8 @@ const EditPages = () => {
   };
 
   return (
-    <Box
-      color="white"
-      mx="auto"
-      mt={12}
-      pt={6}
-      bg="rgba(0,0,0,0.25)"
-      w="100%"
-      textAlign={"center"}
-      borderTop={"1px solid"}
-      borderTopColor="rgba(0,0,0,0.5)"
-    >
-      Edit Pages
+    <Box color="white" mx="auto" mt={12} pt={6} w="100%" textAlign={"center"}>
+      Add new page
       <Box
         color="white"
         mx="auto"
@@ -166,6 +156,7 @@ const EditPages = () => {
         )}
       </Box>
       <Box bg="#141a2c" color="white" mx="auto" pt={6} pb={10}>
+        Edit Pages
         <Flex maxW="400px" mx="auto" flexDir={"column"}>
           {pages.map((page) => (
             <Flex

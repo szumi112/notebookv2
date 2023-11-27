@@ -13,7 +13,13 @@ import {
   FormLabel,
   Input,
   Switch,
+  TabList,
+  TabPanel,
+  Tabs,
+  Tab,
+  TabPanels,
   Text,
+  Textarea,
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import EditPages from "./components/edit-pages";
@@ -24,6 +30,114 @@ function Upload() {
   const [file, setFile] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [editMode, setEditMode] = useState(false);
+  const [text, setText] = useState("");
+  const [uploadType, setUploadType] = useState(null);
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState("upload");
+
+  const renderUploadTypeSelection = () => (
+    <Center mt={10} color="white">
+      <Button
+        bgColor="rgba(255,255,255,0.1)"
+        px="4"
+        pt={2}
+        pb="3"
+        borderRadius="6"
+        border="1px solid"
+        borderColor="rgba(255,255,255,0.25)"
+        _hover={{
+          borderColor: "rgba(255,255,255,0.5)",
+          bgColor: "rgba(255,255,255,0.25)",
+        }}
+        mr={4}
+        onClick={() => setUploadType("file")}
+      >
+        Upload Image/Video
+      </Button>
+      <Button
+        bgColor="rgba(255,255,255,0.1)"
+        px="4"
+        pt={2}
+        pb="3"
+        borderRadius="6"
+        border="1px solid"
+        borderColor="rgba(255,255,255,0.25)"
+        _hover={{
+          borderColor: "rgba(255,255,255,0.5)",
+          bgColor: "rgba(255,255,255,0.25)",
+        }}
+        onClick={() => setUploadType("text")}
+      >
+        Upload Text
+      </Button>
+    </Center>
+  );
+
+  const renderUploadInput = () => {
+    if (uploadType === "file") {
+      return (
+        <Box className="box" mt={10}>
+          <DropFileInput onFileChange={(files) => onFileChange(files)} />
+          <br />
+          <UploadButton onClick={() => handleClick()}>Upload File</UploadButton>
+        </Box>
+      );
+    } else if (uploadType === "text") {
+      return (
+        <Center mx="auto">
+          <FormControl>
+            <FormLabel
+              htmlFor="text"
+              color="white"
+              mb={7}
+              mt={4}
+              textAlign={"center"}
+              fontWeight={"500"}
+              fontSize="24px"
+            >
+              Text input field
+            </FormLabel>
+            <Textarea
+              id="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Enter text here"
+              w="100%"
+              minW="300px"
+              mx="auto"
+              p={2}
+            />
+            <Center mt={4}>
+              <UploadButton onClick={() => handleClick()}>
+                Upload File
+              </UploadButton>
+            </Center>
+          </FormControl>
+        </Center>
+      );
+    }
+  };
+
+  const renderSwitchOption = () => (
+    <Center mt={10} color="white">
+      <Button
+        onClick={() => setUploadType(null)}
+        bgColor="rgba(255,255,255,0.1)"
+        px="4"
+        pt={2}
+        pb="3"
+        borderRadius="6"
+        border="1px solid"
+        borderColor="rgba(255,255,255,0.25)"
+        _hover={{
+          borderColor: "rgba(255,255,255,0.5)",
+          bgColor: "rgba(255,255,255,0.25)",
+        }}
+      >
+        Switch Upload Type
+      </Button>
+    </Center>
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,10 +190,35 @@ function Upload() {
   };
 
   const handleClick = () => {
+    const parsedPageNumber = parseInt(pageNumber, 10);
+
+    if (!parsedPageNumber || isNaN(parsedPageNumber)) {
+      setErrorMessage("Please choose a valid page number");
+      return;
+    }
+
+    setErrorMessage("");
+
     if (!pageNumber) {
       setErrorMessage("Please choose which page to add this onto");
       return;
     }
+
+    if (text) {
+      const itemId = `${pageNumber}_${
+        Date.now().toString(36) + Math.random().toString(36).substr(2)
+      }`;
+      let docData = {
+        id: itemId,
+        text: text,
+        type: "text",
+        mostRecentUploadURL: text,
+      };
+      const userRef = doc(db, "users", itemId);
+      setDoc(userRef, docData, { merge: true });
+      setText("");
+    }
+
     if (file === null) return;
     const fileName = `page${pageNumber}_${file.name}`;
     const fileRef = ref(storage, `videos/${fileName}`);
@@ -104,6 +243,12 @@ function Upload() {
     );
     setErrorMessage("");
   };
+
+  useEffect(() => {
+    if (pageNumber) {
+      setErrorMessage("");
+    }
+  }, [pageNumber]);
 
   return (
     <Box bg="#141a2c" m="0" p="0" minH="100vh" minW="100vw" overflowX="hidden">
@@ -158,37 +303,84 @@ function Upload() {
           Go to scrapbook 📙
         </Button>
       </Center>
-
-      <Box className="box" mt={10}>
-        <h2 className="header">
-          File upload <br></br>
-        </h2>
-        <DropFileInput onFileChange={(files) => onFileChange(files)} />
-        <br></br>
-        <UploadButton onClick={() => handleClick()}> </UploadButton>
-      </Box>
-      <Box mt={12}>
-        <Text textAlign={"center"} color="white" mb={4}>
-          Add on page:
-        </Text>
+      <Tabs
+        index={activeTabIndex}
+        onChange={setActiveTabIndex}
+        color="white"
+        mt={10}
+      >
         <Center>
-          <Input
-            type="number"
-            value={pageNumber}
-            px={4}
-            py={2}
-            borderRadius={"4px"}
-            onChange={(e) => setPageNumber(e.target.value)}
-            placeholder="Page number"
-          />
+          <TabList>
+            <Tab
+              mr={4}
+              h="40px"
+              w="125px"
+              bg="rgba(55,150,200,0.25)"
+              borderRadius={6}
+              border={activeTabIndex === 0 ? "1px solid blue" : "none"}
+              _hover={{
+                backgroundColor: "rgba(55,150,200,0.55)",
+              }}
+            >
+              Upload Files
+            </Tab>
+            <Tab
+              ml={4}
+              h="40px"
+              w="125px"
+              bg="rgba(55,150,200,0.25)"
+              borderRadius={6}
+              border={activeTabIndex === 1 ? "1px solid blue" : "none"}
+              _hover={{
+                backgroundColor: "rgba(55,150,200,0.55)",
+              }}
+            >
+              Manage Pages
+            </Tab>
+          </TabList>
         </Center>
-      </Box>
-      {errorMessage && (
-        <Text textAlign={"center"} color="red" mb={4} mt={2}>
-          {errorMessage}
-        </Text>
-      )}
-      <EditPages />
+        <TabPanels>
+          <TabPanel>
+            {activeTab === "upload" && (
+              <>
+                {!uploadType && renderUploadTypeSelection()}
+                {uploadType && (
+                  <>
+                    {renderUploadInput()}
+                    {renderSwitchOption()}
+                  </>
+                )}
+                {uploadType && (
+                  <Box mt={12}>
+                    <Text textAlign={"center"} color="white" mb={4}>
+                      Add on page:
+                    </Text>
+                    <Center>
+                      <Input
+                        type="number"
+                        value={pageNumber}
+                        px={4}
+                        py={2}
+                        borderRadius={"4px"}
+                        onChange={(e) => setPageNumber(e.target.value)}
+                        placeholder="Page number"
+                      />
+                    </Center>
+                    {errorMessage && (
+                      <Text textAlign={"center"} color="red" mb={4} mt={2}>
+                        {errorMessage}
+                      </Text>
+                    )}
+                  </Box>
+                )}
+              </>
+            )}
+          </TabPanel>
+          <TabPanel>
+            <EditPages />
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
     </Box>
   );
 }
