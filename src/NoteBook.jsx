@@ -23,7 +23,7 @@ const NavigationButtons = ({ flipBook }) => {
   };
 
   return (
-    <Flex justifyContent="space-between" p={4}>
+    <Flex justifyContent="space-between" px={4} py={1}>
       <Button onClick={goToPrevPage}>Previous Page</Button>
       <Button onClick={goToNextPage}>Next Page</Button>
     </Flex>
@@ -322,9 +322,19 @@ const NoteBook = () => {
           );
         })}
       </HTMLFlipBook>
-      {editMode && (
-        <>
-          <Flex justifyContent="space-between" p={4}>
+      <Box
+        position="fixed"
+        bottom="0"
+        left="0"
+        width="100%"
+        zIndex="100"
+        bgColor="rgba(255, 255, 255, 0.9)"
+        h="60px"
+        px={2}
+        py={1}
+      >
+        {editMode && (
+          <Flex justifyContent="space-between">
             <Button onClick={toggleDragAndDropMode}>
               {dragAndDropMode ? "Disable" : "Enable"} Drag & Drop
             </Button>
@@ -332,9 +342,9 @@ const NoteBook = () => {
               {resizeMode ? "Disable" : "Enable"} Resize
             </Button>
           </Flex>
-          <NavigationButtons flipBook={flipBook} />
-        </>
-      )}
+        )}
+        <NavigationButtons flipBook={flipBook} />
+      </Box>
     </Box>
   );
 };
