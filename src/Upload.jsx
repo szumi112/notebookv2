@@ -76,7 +76,7 @@ function Upload() {
   const renderUploadInput = () => {
     if (uploadType === "file") {
       return (
-        <Box className="box" mt={10}>
+        <Box className="box" mt={10} color="black">
           <DropFileInput onFileChange={(files) => onFileChange(files)} />
           <br />
           <UploadButton onClick={() => handleClick()}>Upload File</UploadButton>
@@ -84,7 +84,7 @@ function Upload() {
       );
     } else if (uploadType === "text") {
       return (
-        <Center mx="auto">
+        <Center mx="auto" color="black">
           <FormControl>
             <FormLabel
               htmlFor="text"
@@ -364,6 +364,7 @@ function Upload() {
                         borderRadius={"4px"}
                         onChange={(e) => setPageNumber(e.target.value)}
                         placeholder="Page number"
+                        color="black"
                       />
                     </Center>
                     {errorMessage && (

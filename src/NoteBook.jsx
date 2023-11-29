@@ -53,18 +53,29 @@ const NoteBook = () => {
   const [dragAndDropMode, setDragAndDropMode] = useState(false);
   const [fontSizeState, setFontSizeState] = useState({});
 
+  console.log(size.width);
+
+  const updateFontSizeInFirebase = async (itemId, newFontSize) => {
+    const itemRef = doc(db, "users", itemId);
+    await setDoc(itemRef, { fontSize: newFontSize }, { merge: true });
+  };
+
   const increaseFontSize = (itemId) => {
+    const newFontSize = (fontSizeState[itemId] || 14) + 1;
     setFontSizeState((prev) => ({
       ...prev,
-      [itemId]: (prev[itemId] || 14) + 1,
+      [itemId]: newFontSize,
     }));
+    updateFontSizeInFirebase(itemId, newFontSize);
   };
 
   const decreaseFontSize = (itemId) => {
+    const newFontSize = Math.max((fontSizeState[itemId] || 14) - 1, 10);
     setFontSizeState((prev) => ({
       ...prev,
-      [itemId]: Math.max((prev[itemId] || 14) - 1, 10),
+      [itemId]: newFontSize,
     }));
+    updateFontSizeInFirebase(itemId, newFontSize);
   };
 
   const toggleResizeMode = () => {
@@ -124,25 +135,23 @@ const NoteBook = () => {
     getUploadedItems();
   }, []);
 
+  console.log(uploadedItems);
   const onPageFlip = (e) => setCurrentPage(e.data);
 
   const handleResizeStop = async (item, resizeData, pageNumber) => {
     const newWidth = resizeData.size.width;
     const newHeight = resizeData.size.height;
 
-    let newFontSize = Math.max(10, newWidth / 20);
-
     const updatedItem = {
       ...item,
       width: newWidth,
       height: newHeight,
-      fontSize: newFontSize,
     };
 
     const itemRef = doc(db, "users", `${item.id}`);
     await setDoc(
       itemRef,
-      { width: newWidth, height: newHeight, fontSize: newFontSize },
+      { width: newWidth, height: newHeight },
       { merge: true }
     );
   };
@@ -207,38 +216,121 @@ const NoteBook = () => {
       className: resizableClassName,
     };
 
+    const resizablePropsVideo = {
+      width: item.width || defaultWidth,
+      height: singlePage
+        ? item.height / 2.5 || defaultHeight
+        : item.height || defaultHeight,
+      onResizeStop: (event, resizeData) =>
+        handleResizeStop(item, resizeData, pageNumber),
+      disabled: !resizeMode || !editMode,
+      className: resizableClassName,
+    };
+
+    const resizablePropsImage = {
+      width: item.width || defaultWidth,
+      height: singlePage
+        ? item.height / 2 || defaultHeight
+        : item.height || defaultHeight,
+      onResizeStop: (event, resizeData) =>
+        handleResizeStop(item, resizeData, pageNumber),
+      disabled: !resizeMode || !editMode,
+      className: resizableClassName,
+    };
+
     const fontSize = fontSizeState[item.id] || 14;
 
     return (
       <Box zIndex={1}>
-        <ResizableBox {...resizableProps}>
-          {item.type === "text" ? (
-            <Text
-              style={{
-                width: "100%",
-                height: "100%",
-                fontSize: `${fontSize}px`,
-              }}
-            >
-              {item.text}
-            </Text>
-          ) : isVideo ? (
-            <video controls style={{ width: "100%", height: "100%" }}>
-              <source src={item.mostRecentUploadURL} />
-            </video>
-          ) : (
-            <Image
-              src={item.mostRecentUploadURL}
-              alt="Uploaded content"
-              style={{ width: "100%", height: "100%" }}
-            />
-          )}
-        </ResizableBox>
-        {item.type === "text" && editMode && (
-          <Flex justifyContent="center">
-            <Button onClick={() => decreaseFontSize(item.id)}>-</Button>
-            <Button onClick={() => increaseFontSize(item.id)}>+</Button>
-          </Flex>
+        {singlePage ? (
+          // If singlePage is true, render the content without ResizableBox
+          <>
+            {item.type && (
+              <Box position={"relative"}>
+                <Text
+                  style={{
+                    width: "50%",
+                    height: "50%",
+                    fontSize: `${fontSize / 2}px`,
+                  }}
+                >
+                  {item.text}
+                </Text>
+
+                {editMode && (
+                  <Flex
+                    justifyContent="center"
+                    position="absolute"
+                    top="-50px"
+                    right="0"
+                  >
+                    <Button onClick={() => decreaseFontSize(item.id)}>-</Button>
+                    <Button onClick={() => increaseFontSize(item.id)}>+</Button>
+                  </Flex>
+                )}
+              </Box>
+            )}
+
+            {!item.type && isVideo && (
+              <video controls style={{ height: "100%" }}>
+                <source src={item.mostRecentUploadURL} />
+              </video>
+            )}
+
+            {!item.type && !isVideo && (
+              <Image
+                src={item.mostRecentUploadURL}
+                style={{ height: "100%" }}
+              />
+            )}
+          </>
+        ) : (
+          <ResizableBox
+            {...(item.type === "text"
+              ? resizableProps
+              : item.type === "video"
+              ? resizablePropsVideo
+              : resizablePropsImage)}
+          >
+            {item.type && (
+              <Box position={"relative"}>
+                <Text
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    fontSize: `${fontSize}px`,
+                  }}
+                >
+                  {item.text}
+                </Text>
+
+                {editMode && (
+                  <Flex
+                    justifyContent="center"
+                    position="absolute"
+                    top="-50px"
+                    right="0"
+                  >
+                    <Button onClick={() => decreaseFontSize(item.id)}>-</Button>
+                    <Button onClick={() => increaseFontSize(item.id)}>+</Button>
+                  </Flex>
+                )}
+              </Box>
+            )}
+
+            {!item.type && isVideo && (
+              <video controls style={{ height: "100%" }}>
+                <source src={item.mostRecentUploadURL} />
+              </video>
+            )}
+
+            {!item.type && !isVideo && (
+              <Image
+                src={item.mostRecentUploadURL}
+                style={{ height: "100%" }}
+              />
+            )}
+          </ResizableBox>
         )}
       </Box>
     );
@@ -257,19 +349,21 @@ const NoteBook = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleDragStop = async (item, e, data) => {
+  const handleDragStop = async (item, e, data, pageNumber) => {
     const newX = data.x;
     const newY = data.y;
 
-    const itemIdParts = item.id.split("_");
-    if (itemIdParts.length < 2) {
-      console.error("Invalid item id format:", item.id);
-      return;
-    }
-    const pageNumber = itemIdParts[0];
-    const actualItemId = itemIdParts.slice(1).join("_");
+    const itemIdParts = item.id;
 
-    const itemRef = doc(db, "users", `${pageNumber}_${actualItemId}`);
+    console.log("pagenum: ", pageNumber);
+    let itemRef;
+    const checkId = item.id.split("_");
+    if (checkId.length < 2) {
+      itemRef = doc(db, "users", `${pageNumber}_${itemIdParts}`);
+    } else {
+      itemRef = doc(db, "users", `${itemIdParts}`);
+    }
+
     await setDoc(itemRef, { x: newX, y: newY }, { merge: true });
   };
 
@@ -277,7 +371,7 @@ const NoteBook = () => {
     <Box overflow="hidden" data-density="hard" bgColor={"white"}>
       <HTMLFlipBook
         width={singlePage ? size.width : size.width / 2}
-        height={size.height * 2.5}
+        height={singlePage ? size.height * 4 : size.height * 2.5}
         {...(!singlePage && { size: "stretch" })}
         maxShadowOpacity={0.5}
         showCover={true}
@@ -308,8 +402,11 @@ const NoteBook = () => {
                       onStop={(e, data) =>
                         handleDragStop(item, e, data, pageNumber)
                       }
-                      defaultPosition={{ x: item.x || 0, y: item.y || 0 }}
-                      disabled={!dragAndDropMode}
+                      defaultPosition={{
+                        x: singlePage ? 10 : item.x || 0,
+                        y: 0,
+                      }}
+                      disabled={!dragAndDropMode || singlePage}
                     >
                       <Box w="100%" h="100%">
                         {element}
@@ -333,7 +430,7 @@ const NoteBook = () => {
         px={2}
         py={1}
       >
-        {editMode && (
+        {editMode && !singlePage && (
           <Flex justifyContent="space-between">
             <Button onClick={toggleDragAndDropMode}>
               {dragAndDropMode ? "Disable" : "Enable"} Drag & Drop
